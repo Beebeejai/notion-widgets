@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Countdown - Months & Days</title>
+    <!-- 引入原本嘅跳字鐘字體 (Share Tech Mono) 同埋新嘅幼身復古字體 (Anonymous Pro) -->
+    <link href="https://fonts.googleapis.com/css2?family=Anonymous+Pro&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: transparent; 
+            color: #eeeeee;
+        }
+
+        /* 新增一個外圍 Wrapper 裝住個鐘同一行細字 */
+        .widget-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px; /* 鐘同日期之間嘅距離 */
+        }
+
+        .countdown-container {
+            display: flex;
+            gap: 25px; 
+            padding: 30px 45px;
+            background-color: #1c1c1e;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            font-family: 'Share Tech Mono', monospace; /* 跳字鐘專屬字體 */
+        }
+
+        .time-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .flap {
+            position: relative;
+            background-color: #2c2c2e;
+            width: 100px; 
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4.5rem;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0,0,0,0.2);
+            overflow: hidden;
+            letter-spacing: 2px;
+        }
+
+        .flap::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #1c1c1e;
+            box-shadow: 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .label {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        /* 新增：底部暗灰色確實日期嘅設定 */
+        .target-date-display {
+            font-family: 'Anonymous Pro', monospace; /* 幼身、乾淨嘅復古字體 */
+            color: #5c5c5e; /* 暗灰色，低調唔搶眼 */
+            font-size: 0.85rem;
+            letter-spacing: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="widget-wrapper">
+        <!-- 上半部：跳字鐘 -->
+        <div class="countdown-container">
+            <div class="time-box">
+                <div class="flap" id="months">00</div>
+                <div class="label">Months</div>
+            </div>
+            <div class="time-box">
+                <div class="flap" id="days">00</div>
+                <div class="label">Days</div>
+            </div>
+        </div>
+        
+        <!-- 下半部：暗灰色確實日期 -->
+        <div class="target-date-display" id="target-date"></div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        let dateParam = urlParams.get('date');
+
+        const fallbackDate = "2026-11-20T00:00:00"; 
+        
+        // 確保 JavaScript 順利讀取日期
+        const targetDate = new Date(dateParam ? dateParam : fallbackDate);
+
+        // 格式化日期為 dd.mm.yyyy 並顯示喺底層
+        const targetDd = targetDate.getDate().toString().padStart(2, '0');
+        const targetMm = (targetDate.getMonth() + 1).toString().padStart(2, '0'); // JavaScript 月份由 0 開始，所以要 +1
+        const targetYyyy = targetDate.getFullYear();
+        document.getElementById("target-date").innerText = `${targetDd}.${targetMm}.${targetYyyy}`;
+
+        function updateCountdown() {
+            const now = new Date();
+            
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+            
+            if (target <= today) {
+                document.getElementById("months").innerText = "00";
+                document.getElementById("days").innerText = "00";
+                return;
+            }
+
+            let m = (target.getFullYear() - today.getFullYear()) * 12 + (target.getMonth() - today.getMonth());
+            let d = target.getDate() - today.getDate();
+
+            if (d < 0) {
+                m--;
+                const daysInLastMonth = new Date(target.getFullYear(), target.getMonth(), 0).getDate();
+                d += daysInLastMonth;
+            }
+
+            document.getElementById("months").innerText = m.toString().padStart(2, '0');
+            document.getElementById("days").innerText = d.toString().padStart(2, '0');
+        }
+
+        setInterval(updateCountdown, 1000);
+        updateCountdown(); 
+    </script>
+
+</body>
+</html>
