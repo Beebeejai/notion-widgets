@@ -13,7 +13,8 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: transparent; 
+            background-color: transparent !important; /* 加 !important 強制透明 */
+            color-scheme: light dark; /* 幫瀏覽器識別深淺色模式，避免自動補白底 */
             color: #eeeeee;
         }
 
