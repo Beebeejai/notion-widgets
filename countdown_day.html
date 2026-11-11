@@ -4,36 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Retro Countdown - Months & Days</title>
-    <!-- 引入原本嘅跳字鐘字體 (Share Tech Mono) 同埋新嘅幼身復古字體 (Anonymous Pro) -->
     <link href="https://fonts.googleapis.com/css2?family=Anonymous+Pro&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        body {
+        html, body {
             margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: transparent !important; /* 加 !important 強制透明 */
-            color-scheme: light dark; /* 幫瀏覽器識別深淺色模式，避免自動補白底 */
-            color: #eeeeee;
-        }
-
-        /* 新增一個外圍 Wrapper 裝住個鐘同一行細字 */
-        .widget-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px; /* 鐘同日期之間嘅距離 */
+            background-color: transparent !important;
+            /* 隱藏捲軸，確保喺 Notion 縮細個 frame 時唔會出 scrollbar */
+            overflow: hidden; 
         }
 
         .countdown-container {
             display: flex;
-            gap: 25px; 
-            padding: 30px 45px;
-            background-color: #1c1c1e;
+            flex-direction: column; /* 改為垂直排列，等鐘同日期上下疊住 */
+            align-items: center;
+            background-color: #1c1c1e; /* 黑色範圍 */
             border-radius: 12px;
+            padding: 30px 45px 20px 45px; /* 稍微較細底部 padding，令視覺更緊湊 */
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-            font-family: 'Share Tech Mono', monospace; /* 跳字鐘專屬字體 */
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .clocks-row {
+            display: flex;
+            gap: 25px; 
+            margin-bottom: 25px; /* 跳字鐘同底部日期嘅距離 */
         }
 
         .time-box {
@@ -55,6 +53,7 @@
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0,0,0,0.2);
             overflow: hidden;
             letter-spacing: 2px;
+            color: #eeeeee;
         }
 
         .flap::after {
@@ -76,20 +75,21 @@
             letter-spacing: 4px;
         }
 
-        /* 新增：底部暗灰色確實日期嘅設定 */
+        /* 搬入黑色範圍嘅日期設定 */
         .target-date-display {
-            font-family: 'Anonymous Pro', monospace; /* 幼身、乾淨嘅復古字體 */
-            color: #5c5c5e; /* 暗灰色，低調唔搶眼 */
-            font-size: 0.85rem;
+            font-family: 'Anonymous Pro', monospace;
+            color: #d1d1d6; /* 灰白色字，喺黑底上對比清晰但唔會太搶眼 */
+            font-size: 0.9rem;
             letter-spacing: 3px;
+            opacity: 0.85; /* 加少少透明度提升復古質感 */
         }
     </style>
 </head>
 <body>
 
-    <div class="widget-wrapper">
+    <div class="countdown-container">
         <!-- 上半部：跳字鐘 -->
-        <div class="countdown-container">
+        <div class="clocks-row">
             <div class="time-box">
                 <div class="flap" id="months">00</div>
                 <div class="label">Months</div>
@@ -100,7 +100,7 @@
             </div>
         </div>
         
-        <!-- 下半部：暗灰色確實日期 -->
+        <!-- 下半部：灰白色確實日期 -->
         <div class="target-date-display" id="target-date"></div>
     </div>
 
@@ -109,19 +109,15 @@
         let dateParam = urlParams.get('date');
 
         const fallbackDate = "2026-11-20T00:00:00"; 
-        
-        // 確保 JavaScript 順利讀取日期
         const targetDate = new Date(dateParam ? dateParam : fallbackDate);
 
-        // 格式化日期為 dd.mm.yyyy 並顯示喺底層
         const targetDd = targetDate.getDate().toString().padStart(2, '0');
-        const targetMm = (targetDate.getMonth() + 1).toString().padStart(2, '0'); // JavaScript 月份由 0 開始，所以要 +1
+        const targetMm = (targetDate.getMonth() + 1).toString().padStart(2, '0'); 
         const targetYyyy = targetDate.getFullYear();
         document.getElementById("target-date").innerText = `${targetDd}.${targetMm}.${targetYyyy}`;
 
         function updateCountdown() {
             const now = new Date();
-            
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
             
