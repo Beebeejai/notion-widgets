@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>OpenRouter Credits</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --card-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --border: #e2e8f0;
+      --accent: #10b981;
+      --accent-bg: rgba(16, 185, 129, 0.12);
+      --warn: #ef4444;
+      --warn-bg: rgba(239, 68, 68, 0.12);
+      --bar-bg: #e2e8f0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #191919; /* 貼合 Notion Dark Mode 底色 */
+        --card-bg: #222222;
+        --text-main: #f1f5f9;
+        --text-sub: #94a3b8;
+        --border: #333333;
+        --accent: #34d399;
+        --accent-bg: rgba(52, 211, 153, 0.15);
+        --warn: #f87171;
+        --warn-bg: rgba(248, 113, 113, 0.18);
+        --bar-bg: #334155;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #191919;
+      --card-bg: #222222;
+      --text-main: #f1f5f9;
+      --text-sub: #94a3b8;
+      --border: #333333;
+      --accent: #34d399;
+      --accent-bg: rgba(52, 211, 153, 0.15);
+      --warn: #f87171;
+      --warn-bg: rgba(248, 113, 113, 0.18);
+      --bar-bg: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 10px;
+      user-select: none;
+    }
+
+    .widget {
+      width: 100%;
+      max-width: 380px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      transition: border-color 0.25s, background-color 0.25s;
+    }
+
+    .widget.low-balance {
+      border-color: var(--warn);
+      background: linear-gradient(180deg, var(--warn-bg) 0%, var(--card-bg) 100%);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.3px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--accent);
+    }
+
+    .widget.low-balance .dot {
+      background-color: var(--warn);
+      box-shadow: 0 0 6px var(--warn);
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    button.icon-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+      border-radius: 8px;
+      width: 26px;
+      height: 26px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    button.icon-btn:hover {
+      color: var(--text-main);
+      border-color: var(--text-sub);
+    }
+
+    button.icon-btn:active {
+      transform: scale(0.94);
+    }
+
+    .spinning {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .balance-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin: 4px 0 10px;
+    }
+
+    .balance {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .widget.low-balance .balance {
+      color: var(--warn);
+    }
+
+    .currency {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-left: 4px;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .widget.low-balance .badge {
+      background: var(--warn-bg);
+      color: var(--warn);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: var(--bar-bg);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 999px;
+      transition: width 0.4s ease, background-color 0.25s;
+    }
+
+    .widget.low-balance .progress-fill {
+      background: var(--warn);
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-sub);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 設定面板 */
+    .setup-panel {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .setup-panel.active {
+      display: flex;
+    }
+
+    .setup-panel input {
+      width: 100%;
+      padding: 7px 10px;
+      font-size: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text-main);
+      outline: none;
+    }
+
+    .setup-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .save-btn {
+      flex: 1;
+      padding: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #064e3b;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="widget" id="widget">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span>OPENROUTER CREDITS</span>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" id="refreshBtn" title="立即刷新">↻</button>
+        <button class="icon-btn" id="settingsBtn" title="設定 API Key">⚙</button>
+      </div>
+    </div>
+
+    <div class="balance-row">
+      <div>
+        <span class="balance" id="balanceText">--.--</span>
+        <span class="currency">USD</span>
+      </div>
+      <span class="badge" id="statusBadge">載入中</span>
+    </div>
+
+    <div class="progress-track" id="progressTrack">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="footer">
+      <span id="usageDetail">已用: -- / 總額: --</span>
+      <span id="updatedTime">--:--</span>
+    </div>
+
+    <div class="setup-panel" id="setupPanel">
+      <input type="password" id="keyInput" placeholder="貼上 OpenRouter Management Key (sk-or-...)" />
+      <div class="setup-row">
+        <input type="number" id="warnInput" step="0.5" placeholder="低餘額警告線 (預設 3)" />
+        <button class="save-btn" id="saveBtn">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const widget = document.getElementById('widget');
+    const balanceText = document.getElementById('balanceText');
+    const statusBadge = document.getElementById('statusBadge');
+    const progressTrack = document.getElementById('progressTrack');
+    const progressFill = document.getElementById('progressFill');
+    const usageDetail = document.getElementById('usageDetail');
+    const updatedTime = document.getElementById('updatedTime');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const setupPanel = document.getElementById('setupPanel');
+    const keyInput = document.getElementById('keyInput');
+    const warnInput = document.getElementById('warnInput');
+    const saveBtn = document.getElementById('saveBtn');
+
+    // 解析 URL Hash 參數 (例如: #key=sk-or-xxx&warn=3&theme=dark)
+    function parseHashParams() {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      return {
+        key: params.get('key') || '',
+        warn: params.get('warn') ? parseFloat(params.get('warn')) : null,
+        theme: params.get('theme') || ''
+      };
+    }
+
+    function getConfig() {
+      const hashCfg = parseHashParams();
+      let savedKey = '';
+      let savedWarn = 3.0;
+      try {
+        savedKey = localStorage.getItem('or_mgmt_key') || '';
+        const w = localStorage.getItem('or_warn_limit');
+        if (w) savedWarn = parseFloat(w);
+      } catch (e) {}
+
+      return {
+        key: hashCfg.key || savedKey,
+        warn: hashCfg.warn !== null && !isNaN(hashCfg.warn) ? hashCfg.warn : savedWarn,
+        theme: hashCfg.theme,
+        fromHash: Boolean(hashCfg.key)
+      };
+    }
+
+    function applyTheme(theme) {
+      if (theme === 'dark' || theme === 'light') {
+        document.documentElement.setAttribute('data-theme', theme);
+      }
+    }
+
+    function formatTime() {
+      const now = new Date();
+      return now.toTimeString().slice(0, 5);
+    }
+
+    function renderData(remaining, total, usage, warnLimit) {
+      const isLow = remaining <= warnLimit;
+      widget.classList.toggle('low-balance', isLow);
+      balanceText.textContent = `$${remaining.toFixed(2)}`;
+
+      if (total !== null && total > 0) {
+        const pct = Math.max(0, Math.min(100, (remaining / total) * 100));
+        progressTrack.style.display = 'block';
+        progressFill.style.width = `${pct.toFixed(1)}%`;
+        usageDetail.textContent = `已用 $${usage.toFixed(2)} / $${total.toFixed(2)}`;
+        statusBadge.textContent = isLow ? '餘額偏低' : `剩 ${Math.round(pct)}%`;
+      } else {
+        progressTrack.style.display = 'none';
+        usageDetail.textContent = '單一 Key 額度上限模式';
+        statusBadge.textContent = isLow ? '餘額偏低' : '正常';
+      }
+
+      updatedTime.textContent = `更新 ${formatTime()}`;
+    }
+
+    async function fetchCredits() {
+      const cfg = getConfig();
+      applyTheme(cfg.theme);
+
+      if (!cfg.key) {
+        balanceText.textContent = '未設定';
+        statusBadge.textContent = '請輸入 Key';
+        usageDetail.textContent = '按右上角 ⚙ 設定';
+        setupPanel.classList.add('active');
+        return;
+      }
+
+      refreshBtn.classList.add('spinning');
+      try {
+        // 1. 優先用 Management Key 查詢帳戶總餘額
+        const res = await fetch('https://openrouter.ai/api/v1/credits', {
+          headers: { 'Authorization': `Bearer ${cfg.key}` }
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          const total = Number(json.data.total_credits || 0);
+          const usage = Number(json.data.total_usage || 0);
+          renderData(total - usage, total, usage, cfg.warn);
+        } else if (res.status === 401 || res.status === 403) {
+          // 2. 若用戶提供的是普通 Key，自動改查該 Key 的 Credit Limit 餘額
+          const keyRes = await fetch('https://openrouter.ai/api/v1/auth/key', {
+            headers: { 'Authorization': `Bearer ${cfg.key}` }
+          });
+          if (keyRes.ok) {
+            const keyJson = await keyRes.json();
+            if (keyJson.data && keyJson.data.limit_remaining !== null) {
+              renderData(Number(keyJson.data.limit_remaining), null, null, cfg.warn);
+            } else {
+              balanceText.textContent = '無上限';
+              statusBadge.textContent = '需 Management Key';
+            }
+          } else {
+            throw new Error('Key 無效');
+          }
+        } else {
+          throw new Error(`HTTP ${res.status}`);
+        }
+      } catch (err) {
+        balanceText.textContent = '錯誤';
+        statusBadge.textContent = err.message || '連線失敗';
+      } finally {
+        refreshBtn.classList.remove('spinning');
+      }
+    }
+
+    refreshBtn.addEventListener('click', fetchCredits);
+
+    settingsBtn.addEventListener('click', () => {
+      const cfg = getConfig();
+      keyInput.value = cfg.key;
+      warnInput.value = cfg.warn;
+      setupPanel.classList.toggle('active');
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const newKey = keyInput.value.trim();
+      const newWarn = parseFloat(warnInput.value) || 3.0;
+      try {
+        localStorage.setItem('or_mgmt_key', newKey);
+        localStorage.setItem('or_warn_limit', String(newWarn));
+      } catch (e) {}
+
+      // 同時更新網址 Hash，方便直接複製網址貼入 Notion
+      if (newKey) {
+        window.location.hash = `key=${encodeURIComponent(newKey)}&warn=${newWarn}`;
+      }
+      setupPanel.classList.remove('active');
+      fetchCredits();
+    });
+
+    // 每次切換返嚟視窗或展開彈出視窗時自動刷新
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) fetchCredits();
+    });
+
+    fetchCredits();
+  </script>
+</body>
+</html>
