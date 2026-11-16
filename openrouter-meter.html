@@ -161,7 +161,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 160px;
+      max-width: 165px;
     }
 
     .widget.low-balance .badge {
@@ -220,18 +220,17 @@
 
     .setup-row { display: flex; gap: 6px; }
 
-    .btn {
+    .save-btn {
       flex: 1;
       padding: 7px;
       font-size: 12px;
       font-weight: 600;
       border: none;
       border-radius: 8px;
+      background: var(--accent);
+      color: #064e3b;
       cursor: pointer;
     }
-
-    .save-btn { background: var(--accent); color: #064e3b; }
-    .copy-btn { background: var(--border); color: var(--text-main); }
   </style>
 </head>
 <body>
@@ -243,7 +242,7 @@
       </div>
       <div class="actions">
         <button class="icon-btn" id="refreshBtn" title="立即刷新">↻</button>
-        <button class="icon-btn" id="settingsBtn" title="設定 API Key">⚙</button>
+        <button class="icon-btn" id="settingsBtn" title="設定">⚙</button>
       </div>
     </div>
 
@@ -255,7 +254,7 @@
       <span class="badge" id="statusBadge">載入中</span>
     </div>
 
-    <div class="progress-track" id="progressTrack">
+    <div class="progress-track">
       <div class="progress-fill" id="progressFill"></div>
     </div>
 
@@ -265,63 +264,47 @@
     </div>
 
     <div class="setup-panel" id="setupPanel">
-      <input type="text" id="keyInput" autocomplete="off" spellcheck="false" placeholder="貼上 Management Key (sk-or-v1-...)" />
+      <input type="url" id="urlInput" placeholder="貼上 Cloudflare Worker 網址 (https://...workers.dev)" />
       <div class="setup-row">
         <input type="number" id="warnInput" step="0.5" placeholder="警告線 (預設 3)" />
-        <button class="btn save-btn" id="saveBtn">儲存</button>
-        <button class="btn copy-btn" id="copyUrlBtn">複製網址</button>
+        <button class="save-btn" id="saveBtn">儲存</button>
       </div>
     </div>
   </div>
 
   <script>
+    // 👇 將下面引號入面換成你嘅 Cloudflare Worker 網址，Notion 就可以直接用乾淨網址，唔使加任何參數
+    const DEFAULT_WORKER_URL = "https://or-credits.printing001.workers.dev";
+    const DEFAULT_WARN_LIMIT = 3.0;
+
     const widget = document.getElementById('widget');
     const balanceText = document.getElementById('balanceText');
     const statusBadge = document.getElementById('statusBadge');
-    const progressTrack = document.getElementById('progressTrack');
     const progressFill = document.getElementById('progressFill');
     const usageDetail = document.getElementById('usageDetail');
     const updatedTime = document.getElementById('updatedTime');
     const refreshBtn = document.getElementById('refreshBtn');
     const settingsBtn = document.getElementById('settingsBtn');
     const setupPanel = document.getElementById('setupPanel');
-    const keyInput = document.getElementById('keyInput');
+    const urlInput = document.getElementById('urlInput');
     const warnInput = document.getElementById('warnInput');
     const saveBtn = document.getElementById('saveBtn');
-    const copyUrlBtn = document.getElementById('copyUrlBtn');
-
-    function cleanKey(raw) {
-      return (raw || '').replace(/[\s\r\n]+/g, '');
-    }
-
-    function parseHashParams() {
-      const hash = window.location.hash.substring(1);
-      // 支援 #key=sk-or-... 或直接貼 #sk-or-...
-      if (hash.startsWith('sk-or-')) {
-        return { key: cleanKey(hash.split('&')[0]), warn: null, theme: '' };
-      }
-      const params = new URLSearchParams(hash);
-      return {
-        key: cleanKey(params.get('key')),
-        warn: params.get('warn') ? parseFloat(params.get('warn')) : null,
-        theme: params.get('theme') || ''
-      };
-    }
 
     function getConfig() {
-      const hashCfg = parseHashParams();
-      let savedKey = '';
-      let savedWarn = 3.0;
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      let savedUrl = '';
+      let savedWarn = DEFAULT_WARN_LIMIT;
       try {
-        savedKey = cleanKey(localStorage.getItem('or_mgmt_key'));
+        savedUrl = localStorage.getItem('or_worker_url') || '';
         const w = localStorage.getItem('or_warn_limit');
         if (w) savedWarn = parseFloat(w);
       } catch (e) {}
 
+      const cleanDefault = DEFAULT_WORKER_URL.includes('你個子網域') ? '' : DEFAULT_WORKER_URL;
       return {
-        key: hashCfg.key || savedKey,
-        warn: hashCfg.warn !== null && !isNaN(hashCfg.warn) ? hashCfg.warn : savedWarn,
-        theme: hashCfg.theme
+        url: (params.get('url') || savedUrl || cleanDefault).trim().replace(/\/$/, ''),
+        warn: params.get('warn') ? parseFloat(params.get('warn')) : savedWarn,
+        theme: params.get('theme') || ''
       };
     }
 
@@ -335,80 +318,43 @@
       return new Date().toTimeString().slice(0, 5);
     }
 
-    function renderData(remaining, total, usage, warnLimit) {
-      const isLow = remaining <= warnLimit;
-      widget.classList.toggle('low-balance', isLow);
-      balanceText.textContent = `$${remaining.toFixed(2)}`;
-
-      if (total !== null && total > 0) {
-        const pct = Math.max(0, Math.min(100, (remaining / total) * 100));
-        progressTrack.style.display = 'block';
-        progressFill.style.width = `${pct.toFixed(1)}%`;
-        usageDetail.textContent = `已用 $${usage.toFixed(2)} / $${total.toFixed(2)}`;
-        statusBadge.textContent = isLow ? '餘額偏低' : `剩 ${Math.round(pct)}%`;
-      } else {
-        progressTrack.style.display = 'none';
-        usageDetail.textContent = '單一 Key 額度上限模式';
-        statusBadge.textContent = isLow ? '餘額偏低' : '正常';
-      }
-
-      updatedTime.textContent = `更新 ${formatTime()}`;
-    }
-
     async function fetchCredits() {
       const cfg = getConfig();
       applyTheme(cfg.theme);
 
-      if (!cfg.key) {
+      if (!cfg.url) {
         widget.classList.remove('low-balance');
         balanceText.textContent = '未設定';
-        statusBadge.textContent = '請輸入 Key';
-        usageDetail.textContent = '按右上角 ⚙ 設定';
+        statusBadge.textContent = '請輸入 Worker 網址';
         setupPanel.classList.add('active');
         return;
       }
 
       refreshBtn.classList.add('spinning');
       try {
-        const res = await fetch('https://openrouter.ai/api/v1/credits', {
-          headers: { 'Authorization': `Bearer ${cfg.key}` }
-        });
+        const res = await fetch(cfg.url);
+        const json = await res.json();
 
-        if (res.ok) {
-          const json = await res.json();
-          const total = Number(json.data.total_credits || 0);
-          const usage = Number(json.data.total_usage || 0);
-          renderData(total - usage, total, usage, cfg.warn);
-          return;
+        if (!res.ok) {
+          throw new Error(json?.error?.message || `HTTP ${res.status}`);
         }
 
-        // 讀取伺服器回傳的具體錯誤原因
-        let errMsg = `HTTP ${res.status}`;
-        try {
-          const errJson = await res.json();
-          if (errJson?.error?.message) errMsg = `${res.status}: ${errJson.error.message}`;
-        } catch (e) {}
+        const total = Number(json.data.total_credits || 0);
+        const usage = Number(json.data.total_usage || 0);
+        const remaining = total - usage;
+        const pct = total > 0 ? Math.max(0, Math.min(100, (remaining / total) * 100)) : 0;
+        const isLow = remaining <= cfg.warn;
 
-        // 若為 401/403，嘗試看看是否為設有上限的普通 Key
-        if (res.status === 401 || res.status === 403) {
-          const keyRes = await fetch('https://openrouter.ai/api/v1/auth/key', {
-            headers: { 'Authorization': `Bearer ${cfg.key}` }
-          });
-          if (keyRes.ok) {
-            const keyJson = await keyRes.json();
-            if (keyJson.data && keyJson.data.limit_remaining !== null) {
-              renderData(Number(keyJson.data.limit_remaining), null, null, cfg.warn);
-              return;
-            }
-          }
-        }
-
-        throw new Error(errMsg);
+        widget.classList.toggle('low-balance', isLow);
+        balanceText.textContent = `$${remaining.toFixed(2)}`;
+        progressFill.style.width = `${pct.toFixed(1)}%`;
+        usageDetail.textContent = `已用 $${usage.toFixed(2)} / $${total.toFixed(2)}`;
+        statusBadge.textContent = isLow ? '餘額偏低' : `剩 ${Math.round(pct)}%`;
+        updatedTime.textContent = `更新 ${formatTime()}`;
       } catch (err) {
         widget.classList.add('low-balance');
         balanceText.textContent = '錯誤';
         statusBadge.textContent = err.message || '連線失敗';
-        usageDetail.textContent = `Key 前綴: ${cfg.key.slice(0, 10)}...`;
       } finally {
         refreshBtn.classList.remove('spinning');
       }
@@ -418,45 +364,20 @@
 
     settingsBtn.addEventListener('click', () => {
       const cfg = getConfig();
-      keyInput.value = cfg.key;
+      urlInput.value = cfg.url;
       warnInput.value = cfg.warn;
       setupPanel.classList.toggle('active');
     });
 
-    function buildShareUrl(key, warn) {
-      const base = window.location.origin + window.location.pathname;
-      return `${base}#key=${encodeURIComponent(key)}&warn=${warn}`;
-    }
-
     saveBtn.addEventListener('click', () => {
-      const newKey = cleanKey(keyInput.value);
-      const newWarn = parseFloat(warnInput.value) || 3.0;
+      const newUrl = urlInput.value.trim();
+      const newWarn = parseFloat(warnInput.value) || DEFAULT_WARN_LIMIT;
       try {
-        localStorage.setItem('or_mgmt_key', newKey);
+        localStorage.setItem('or_worker_url', newUrl);
         localStorage.setItem('or_warn_limit', String(newWarn));
       } catch (e) {}
-
-      if (newKey) {
-        window.location.hash = `key=${encodeURIComponent(newKey)}&warn=${newWarn}`;
-      } else {
-        history.replaceState(null, '', window.location.pathname);
-      }
       setupPanel.classList.remove('active');
       fetchCredits();
-    });
-
-    copyUrlBtn.addEventListener('click', async () => {
-      const newKey = cleanKey(keyInput.value) || getConfig().key;
-      const newWarn = parseFloat(warnInput.value) || getConfig().warn;
-      if (!newKey) return;
-      const url = buildShareUrl(newKey, newWarn);
-      try {
-        await navigator.clipboard.writeText(url);
-        copyUrlBtn.textContent = '已複製！';
-        setTimeout(() => (copyUrlBtn.textContent = '複製網址'), 1500);
-      } catch (e) {
-        prompt('請手動複製以下網址貼入 Notion：', url);
-      }
     });
 
     document.addEventListener('visibilitychange', () => {
