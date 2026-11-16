@@ -20,7 +20,7 @@
 
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
-        --bg: #191919; /* 貼合 Notion Dark Mode 底色 */
+        --bg: #191919;
         --card-bg: #222222;
         --text-main: #f1f5f9;
         --text-sub: #94a3b8;
@@ -46,11 +46,7 @@
       --bar-bg: #334155;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
@@ -108,10 +104,7 @@
       box-shadow: 0 0 6px var(--warn);
     }
 
-    .actions {
-      display: flex;
-      gap: 6px;
-    }
+    .actions { display: flex; gap: 6px; }
 
     button.icon-btn {
       background: transparent;
@@ -128,27 +121,17 @@
       transition: all 0.15s;
     }
 
-    button.icon-btn:hover {
-      color: var(--text-main);
-      border-color: var(--text-sub);
-    }
+    button.icon-btn:hover { color: var(--text-main); border-color: var(--text-sub); }
+    button.icon-btn:active { transform: scale(0.94); }
 
-    button.icon-btn:active {
-      transform: scale(0.94);
-    }
-
-    .spinning {
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      100% { transform: rotate(360deg); }
-    }
+    .spinning { animation: spin 0.8s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
 
     .balance-row {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
+      gap: 8px;
       margin: 4px 0 10px;
     }
 
@@ -159,9 +142,7 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .widget.low-balance .balance {
-      color: var(--warn);
-    }
+    .widget.low-balance .balance { color: var(--warn); }
 
     .currency {
       font-size: 12px;
@@ -177,6 +158,10 @@
       border-radius: 999px;
       background: var(--accent-bg);
       color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 160px;
     }
 
     .widget.low-balance .badge {
@@ -201,9 +186,7 @@
       transition: width 0.4s ease, background-color 0.25s;
     }
 
-    .widget.low-balance .progress-fill {
-      background: var(--warn);
-    }
+    .widget.low-balance .progress-fill { background: var(--warn); }
 
     .footer {
       display: flex;
@@ -213,19 +196,16 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* 設定面板 */
     .setup-panel {
       display: none;
       flex-direction: column;
       gap: 8px;
-      margin-top: 8px;
+      margin-top: 10px;
       padding-top: 10px;
       border-top: 1px dashed var(--border);
     }
 
-    .setup-panel.active {
-      display: flex;
-    }
+    .setup-panel.active { display: flex; }
 
     .setup-panel input {
       width: 100%;
@@ -238,22 +218,20 @@
       outline: none;
     }
 
-    .setup-row {
-      display: flex;
-      gap: 6px;
-    }
+    .setup-row { display: flex; gap: 6px; }
 
-    .save-btn {
+    .btn {
       flex: 1;
       padding: 7px;
       font-size: 12px;
       font-weight: 600;
       border: none;
       border-radius: 8px;
-      background: var(--accent);
-      color: #064e3b;
       cursor: pointer;
     }
+
+    .save-btn { background: var(--accent); color: #064e3b; }
+    .copy-btn { background: var(--border); color: var(--text-main); }
   </style>
 </head>
 <body>
@@ -287,10 +265,11 @@
     </div>
 
     <div class="setup-panel" id="setupPanel">
-      <input type="password" id="keyInput" placeholder="貼上 OpenRouter Management Key (sk-or-...)" />
+      <input type="text" id="keyInput" autocomplete="off" spellcheck="false" placeholder="貼上 Management Key (sk-or-v1-...)" />
       <div class="setup-row">
-        <input type="number" id="warnInput" step="0.5" placeholder="低餘額警告線 (預設 3)" />
-        <button class="save-btn" id="saveBtn">儲存</button>
+        <input type="number" id="warnInput" step="0.5" placeholder="警告線 (預設 3)" />
+        <button class="btn save-btn" id="saveBtn">儲存</button>
+        <button class="btn copy-btn" id="copyUrlBtn">複製網址</button>
       </div>
     </div>
   </div>
@@ -309,13 +288,21 @@
     const keyInput = document.getElementById('keyInput');
     const warnInput = document.getElementById('warnInput');
     const saveBtn = document.getElementById('saveBtn');
+    const copyUrlBtn = document.getElementById('copyUrlBtn');
 
-    // 解析 URL Hash 參數 (例如: #key=sk-or-xxx&warn=3&theme=dark)
+    function cleanKey(raw) {
+      return (raw || '').replace(/[\s\r\n]+/g, '');
+    }
+
     function parseHashParams() {
       const hash = window.location.hash.substring(1);
+      // 支援 #key=sk-or-... 或直接貼 #sk-or-...
+      if (hash.startsWith('sk-or-')) {
+        return { key: cleanKey(hash.split('&')[0]), warn: null, theme: '' };
+      }
       const params = new URLSearchParams(hash);
       return {
-        key: params.get('key') || '',
+        key: cleanKey(params.get('key')),
         warn: params.get('warn') ? parseFloat(params.get('warn')) : null,
         theme: params.get('theme') || ''
       };
@@ -326,7 +313,7 @@
       let savedKey = '';
       let savedWarn = 3.0;
       try {
-        savedKey = localStorage.getItem('or_mgmt_key') || '';
+        savedKey = cleanKey(localStorage.getItem('or_mgmt_key'));
         const w = localStorage.getItem('or_warn_limit');
         if (w) savedWarn = parseFloat(w);
       } catch (e) {}
@@ -334,8 +321,7 @@
       return {
         key: hashCfg.key || savedKey,
         warn: hashCfg.warn !== null && !isNaN(hashCfg.warn) ? hashCfg.warn : savedWarn,
-        theme: hashCfg.theme,
-        fromHash: Boolean(hashCfg.key)
+        theme: hashCfg.theme
       };
     }
 
@@ -346,8 +332,7 @@
     }
 
     function formatTime() {
-      const now = new Date();
-      return now.toTimeString().slice(0, 5);
+      return new Date().toTimeString().slice(0, 5);
     }
 
     function renderData(remaining, total, usage, warnLimit) {
@@ -375,6 +360,7 @@
       applyTheme(cfg.theme);
 
       if (!cfg.key) {
+        widget.classList.remove('low-balance');
         balanceText.textContent = '未設定';
         statusBadge.textContent = '請輸入 Key';
         usageDetail.textContent = '按右上角 ⚙ 設定';
@@ -384,7 +370,6 @@
 
       refreshBtn.classList.add('spinning');
       try {
-        // 1. 優先用 Management Key 查詢帳戶總餘額
         const res = await fetch('https://openrouter.ai/api/v1/credits', {
           headers: { 'Authorization': `Bearer ${cfg.key}` }
         });
@@ -394,8 +379,18 @@
           const total = Number(json.data.total_credits || 0);
           const usage = Number(json.data.total_usage || 0);
           renderData(total - usage, total, usage, cfg.warn);
-        } else if (res.status === 401 || res.status === 403) {
-          // 2. 若用戶提供的是普通 Key，自動改查該 Key 的 Credit Limit 餘額
+          return;
+        }
+
+        // 讀取伺服器回傳的具體錯誤原因
+        let errMsg = `HTTP ${res.status}`;
+        try {
+          const errJson = await res.json();
+          if (errJson?.error?.message) errMsg = `${res.status}: ${errJson.error.message}`;
+        } catch (e) {}
+
+        // 若為 401/403，嘗試看看是否為設有上限的普通 Key
+        if (res.status === 401 || res.status === 403) {
           const keyRes = await fetch('https://openrouter.ai/api/v1/auth/key', {
             headers: { 'Authorization': `Bearer ${cfg.key}` }
           });
@@ -403,19 +398,17 @@
             const keyJson = await keyRes.json();
             if (keyJson.data && keyJson.data.limit_remaining !== null) {
               renderData(Number(keyJson.data.limit_remaining), null, null, cfg.warn);
-            } else {
-              balanceText.textContent = '無上限';
-              statusBadge.textContent = '需 Management Key';
+              return;
             }
-          } else {
-            throw new Error('Key 無效');
           }
-        } else {
-          throw new Error(`HTTP ${res.status}`);
         }
+
+        throw new Error(errMsg);
       } catch (err) {
+        widget.classList.add('low-balance');
         balanceText.textContent = '錯誤';
         statusBadge.textContent = err.message || '連線失敗';
+        usageDetail.textContent = `Key 前綴: ${cfg.key.slice(0, 10)}...`;
       } finally {
         refreshBtn.classList.remove('spinning');
       }
@@ -430,23 +423,42 @@
       setupPanel.classList.toggle('active');
     });
 
+    function buildShareUrl(key, warn) {
+      const base = window.location.origin + window.location.pathname;
+      return `${base}#key=${encodeURIComponent(key)}&warn=${warn}`;
+    }
+
     saveBtn.addEventListener('click', () => {
-      const newKey = keyInput.value.trim();
+      const newKey = cleanKey(keyInput.value);
       const newWarn = parseFloat(warnInput.value) || 3.0;
       try {
         localStorage.setItem('or_mgmt_key', newKey);
         localStorage.setItem('or_warn_limit', String(newWarn));
       } catch (e) {}
 
-      // 同時更新網址 Hash，方便直接複製網址貼入 Notion
       if (newKey) {
         window.location.hash = `key=${encodeURIComponent(newKey)}&warn=${newWarn}`;
+      } else {
+        history.replaceState(null, '', window.location.pathname);
       }
       setupPanel.classList.remove('active');
       fetchCredits();
     });
 
-    // 每次切換返嚟視窗或展開彈出視窗時自動刷新
+    copyUrlBtn.addEventListener('click', async () => {
+      const newKey = cleanKey(keyInput.value) || getConfig().key;
+      const newWarn = parseFloat(warnInput.value) || getConfig().warn;
+      if (!newKey) return;
+      const url = buildShareUrl(newKey, newWarn);
+      try {
+        await navigator.clipboard.writeText(url);
+        copyUrlBtn.textContent = '已複製！';
+        setTimeout(() => (copyUrlBtn.textContent = '複製網址'), 1500);
+      } catch (e) {
+        prompt('請手動複製以下網址貼入 Notion：', url);
+      }
+    });
+
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) fetchCredits();
     });
